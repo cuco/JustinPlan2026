@@ -15,7 +15,7 @@ export function StudyCalendar({records,today,ready,onOpen}:{records:RecordMap,to
  const items=selection.view==='daily'?daily.map(t=>({...t,target:1,unit:'项'})):weekly;
  const selectedAvailable=selection.date<=today;
  return <section className="panel study-calendar" aria-label="学期打卡日历">
-  <div className="calendar-heading"><div><h3><CalendarDays size={21}/>学期打卡日历</h3><p>每天一格，颜色越深，完成越多。下方数字是每周达标任务数。</p></div><span className="calendar-scroll-hint">可左右滑动查看</span></div>
+  <div className="calendar-heading"><h3><CalendarDays size={21}/>学期打卡日历</h3></div>
   <div className="calendar-scroll" tabIndex={0} role="region" aria-label="整个学期每日色块和每周任务数，可横向滚动">
    <div className="calendar-chart" style={{'--week-count':weeks.length} as CSSProperties}>
     <span className="calendar-axis" style={{gridRow:1,gridColumn:1}}/>
@@ -25,7 +25,7 @@ export function StudyCalendar({records,today,ready,onOpen}:{records:RecordMap,to
      const date=addDays(week,row),valid=inTerm(date),future=date>today,count=ready?dailyCount(records,date):0;
      const selected=selection.view==='daily'?date===selection.date:week===selectedWeek;
      const label=`${fullDate(date)}，${future?'尚未到来':ready?`每日完成 ${count} / ${daily.length} 项`:'正在读取记录'}`;
-     return valid?<button type="button" key={date} className={`calendar-day level-${count}${future?' future':''}${selected?' picked':''}${date===today?' is-today':''}`} style={{gridRow:row+2,gridColumn:column+2}} disabled={!ready||future} aria-label={label} title={label} aria-pressed={selected} onClick={()=>setSelection({date,view:'daily'})}/>:<span key={date} style={{gridRow:row+2,gridColumn:column+2}} aria-hidden="true"/>;
+     return valid?<button type="button" key={date} className={`calendar-day level-${count}${future?' future':''}${selected?' picked':''}${date===today?' is-today':''}`} style={{gridRow:row+2,gridColumn:column+2}} disabled={!ready||future} aria-label={label} title={label} aria-pressed={selected} onClick={()=>setSelection({date,view:'daily'})}>{ready&&!future&&count===daily.length&&<Check size={14} strokeWidth={3} aria-hidden="true"/>}</button>:<span key={date} style={{gridRow:row+2,gridColumn:column+2}} aria-hidden="true"/>;
     }))}
     <span className="calendar-axis calendar-week-label" style={{gridRow:9,gridColumn:1}}>周任务</span>
     {weeks.map((week,column)=>{const future=week>monday(today)||today<START,n=weekCount(records,week);const label=`${weekRange(week)}，${future?'尚未到来':ready?`每周完成 ${n} / ${weekly.length} 项`:'正在读取记录'}`;return <button type="button" key={week} className={'calendar-week'+(selection.view==='weekly'&&selectedWeek===week?' picked':'')+(n===weekly.length&&ready?' complete':'')} style={{gridRow:9,gridColumn:column+2}} aria-label={label} title={label} disabled={!ready||future} aria-pressed={selection.view==='weekly'&&selectedWeek===week} onClick={()=>setSelection({date:clampDate(week),view:'weekly'})}>{future||!ready?'—':`${n}/${weekly.length}`}</button>;})}
