@@ -8,12 +8,12 @@ export const daily=[
  {id:'read',title:'英语阅读',desc:'分级读物 1–2 本',emoji:'📖'},
 ];
 export const weekly=[
- {id:'math',title:'数学进阶学习',desc:'每天约 45 分钟，几点做自己定',emoji:'🧮',target:5,unit:'天'},
- {id:'test',title:'数学周测 + 错题重做',desc:'每周一测，目标正确率 ≥ 85%',emoji:'✏️',target:1,unit:'次'},
- {id:'story',title:'凯叔故事 + 简单复述',desc:'平均每天 1 个故事，听完讲一讲',emoji:'📖',target:7,unit:'个'},
+ {id:'math',title:'桃李未来 S 班数学任务',desc:'每天约 45 分钟，完成 S 班学习任务',emoji:'🧮',target:5,unit:'天'},
+ {id:'test',title:'小学数学学习',desc:'按计划学完小学数学内容，完成本周学习任务',emoji:'✏️',target:1,unit:'次'},
+ {id:'story',title:'凯叔100个故事',desc:'平均每天 1 个故事，听完讲一讲',emoji:'📖',target:7,unit:'个'},
  {id:'words',title:'故事好词好句摘抄',desc:'收藏喜欢的词句',emoji:'📝',target:3,unit:'个'},
  {id:'robot',title:'MiniDuck 机器人项目',desc:'建议周六留一整块时间，动手探索',emoji:'🤖',target:1,unit:'次'},
- {id:'review',title:'周日家庭复盘',desc:'一起数格子、发积分、聊聊怎么调整',emoji:'🗓️',target:1,unit:'次'},
+ {id:'review',title:'周日家庭复盘',desc:'一起聊聊这周感受和调整',emoji:'🗓️',target:1,unit:'次'},
 ];
 export const phases=[
  {id:'p1',time:'10 月上旬',title:'认识硬件',desc:'认识 MiniDuck 主控、电机和传感器；一起装好底盘，跑通官方示例程序。'},
