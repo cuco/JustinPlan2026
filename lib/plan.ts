@@ -34,7 +34,7 @@ export function validateChange(key:unknown,value:unknown,now=todayKey()){
  const [kind,period,id]=key.split(':');
  if(kind==='d')return key.split(':').length===3&&period===now&&inTerm(period)&&daily.some(t=>t.id===id)&&value<=1;
  if(kind==='w')return key.split(':').length===3&&period===monday(now)&&inTerm(now)&&weekly.some(t=>t.id===id&&value<=t.target);
- if(kind==='g')return key.split(':').length===2&&['p1','p2','p3','p4','dental','math-all','s-class','mock2'].includes(period)&&value<=1;
+ if(kind==='g')return key.split(':').length===2&&['p1','p2','p3','p4','dental','math-all','s-class'].includes(period)&&value<=1;
  return false;
 }
 
