@@ -10,8 +10,7 @@ export const daily=[
 export const weekly=[
  {id:'math',title:'桃李未来 S 班数学任务',desc:'每天约 45 分钟，完成 S 班学习任务',emoji:'🧮',target:5,unit:'天'},
  {id:'test',title:'小学数学学习',desc:'按计划学完小学数学内容，完成本周学习任务',emoji:'✏️',target:1,unit:'次'},
- {id:'story',title:'凯叔100个故事',desc:'平均每天 1 个故事，听完讲一讲',emoji:'📖',target:7,unit:'个'},
- {id:'words',title:'故事好词好句摘抄',desc:'收藏喜欢的词句',emoji:'📝',target:3,unit:'个'},
+ {id:'story',title:'凯叔100个故事',desc:'平均每天看 1 个故事，看完讲一讲',emoji:'📖',target:7,unit:'个'},
  {id:'robot',title:'MiniDuck 机器人项目',desc:'建议周六留一整块时间，动手探索',emoji:'🤖',target:1,unit:'次'},
  {id:'review',title:'周日家庭复盘',desc:'一起聊聊这周感受和调整',emoji:'🗓️',target:1,unit:'次'},
 ];
@@ -35,6 +34,12 @@ export function validateChange(key:unknown,value:unknown,now=todayKey()){
  const [kind,period,id]=key.split(':');
  if(kind==='d')return key.split(':').length===3&&period===now&&inTerm(period)&&daily.some(t=>t.id===id)&&value<=1;
  if(kind==='w')return key.split(':').length===3&&period===monday(now)&&inTerm(now)&&weekly.some(t=>t.id===id&&value<=t.target);
- if(kind==='g')return key.split(':').length===2&&['p1','p2','p3','p4','dental','math-all','mock1','mock2'].includes(period)&&value<=1;
+ if(kind==='g')return key.split(':').length===2&&['p1','p2','p3','p4','dental','math-all','s-class','mock2'].includes(period)&&value<=1;
  return false;
+}
+
+export function semesterWeeks(){
+ const result:string[]=[];
+ for(let week=monday(START);week<=END;week=addDays(week,7))result.push(week);
+ return result;
 }
