@@ -1,35 +1,78 @@
 'use client';
+
 import {useCallback,useEffect,useRef,useState} from 'react';
-import {type RecordMap,todayKey,validateChange} from './plan';
+import {END,START,type RecordMap,todayKey,validateChange} from './plan';
+
+const STORAGE_KEY='justin-plan-2026:progress:v1';
+const dailyKey=/^d:(\d{4}-\d{2}-\d{2}):(listen|word|bath|teeth|read)$/;
+const weeklyKey=/^w:(\d{4}-\d{2}-\d{2}):(math|test|story|robot|review)$/;
+const goalKey=/^g:(p1|p2|p3|p4|dental|math-all|s-class)$/;
+
+type StoredProgress={version:1;records:RecordMap;lastSavedAt:string|null};
+
+function isRecordKey(key:string){
+ const day=key.match(dailyKey);if(day)return day[1]>=START&&day[1]<=END;
+ const week=key.match(weeklyKey);if(week)return week[1]>='2026-08-31'&&week[1]<=END;
+ return goalKey.test(key);
+}
+
+function cleanRecords(value:unknown):RecordMap{
+ if(!value||typeof value!=='object'||Array.isArray(value))return {};
+ return Object.fromEntries(Object.entries(value).filter(([key,n])=>isRecordKey(key)&&Number.isInteger(n)&&Number(n)>=0&&Number(n)<=7).map(([key,n])=>[key,Number(n)]));
+}
+
+function readStored():StoredProgress{
+ const raw=localStorage.getItem(STORAGE_KEY);if(!raw)return {version:1,records:{},lastSavedAt:null};
+ const data=JSON.parse(raw) as {records?:unknown,lastSavedAt?:unknown};
+ return {version:1,records:cleanRecords(data.records),lastSavedAt:typeof data.lastSavedAt==='string'?data.lastSavedAt:null};
+}
+
+function writeStored(records:RecordMap,lastSavedAt:string){
+ localStorage.setItem(STORAGE_KEY,JSON.stringify({version:1,records,lastSavedAt} satisfies StoredProgress));
+}
+
 export function useProgress(){
  const [records,setRecords]=useState<RecordMap>({});const recordRef=useRef<RecordMap>({});
- const [ready,setReady]=useState(false);const readyRef=useRef(false);const [busy,setBusy]=useState(false);const busyRef=useRef(false);
- const [accountEmail,setAccountEmail]=useState('');const [lastSavedAt,setLastSavedAt]=useState<string|null>(null);
- const [error,setError]=useState('');const [auth,setAuth]=useState(false);const [today,setToday]=useState(todayKey());const seq=useRef(0);
- const failedRef=useRef<{key:string,value:number,expected:number}|null>(null);
- const [failed,setFailed]=useState<{key:string,value:number,expected:number}|null>(null);
+ const [ready,setReady]=useState(false);const readyRef=useRef(false);const [busy,setBusy]=useState(false);
+ const [error,setError]=useState('');const [today,setToday]=useState(todayKey());
+ const [lastSavedAt,setLastSavedAt]=useState<string|null>(null);
+
  const refresh=useCallback(async()=>{
-  if(busyRef.current)return;
-  const n=++seq.current;
-  try{const r=await fetch('/api/progress',{cache:'no-store',credentials:'same-origin',signal:AbortSignal.timeout(15000)});if(r.status===401&&n===seq.current){setAuth(true);readyRef.current=false;setReady(false);setAccountEmail('');}if(!r.ok)throw new Error(r.status===401?'请登录后打开你的成长手账。':'暂时无法读取记录，请联网后重试。');const data=await r.json() as {records:RecordMap,today:string,accountEmail:string,lastSavedAt:string|null};if(n!==seq.current)return;recordRef.current=data.records;setRecords(data.records);setToday(data.today);setAccountEmail(data.accountEmail);setLastSavedAt(data.lastSavedAt);readyRef.current=true;setReady(true);setAuth(false);if(failedRef.current){const f=failedRef.current;if((data.records[f.key]||0)===f.value){failedRef.current=null;setFailed(null);setError('');}else{const next={...f,expected:data.records[f.key]||0};failedRef.current=next;setFailed(next);}}else setError('');}
-  catch(e){if(n===seq.current)setError(e instanceof Error?e.message:'暂时无法读取记录。');}
+  try{const data=readStored();recordRef.current=data.records;setRecords(data.records);setLastSavedAt(data.lastSavedAt);setToday(todayKey());readyRef.current=true;setReady(true);setError('');}
+  catch{readyRef.current=false;setReady(false);setError('无法读取本机记录，请导入之前导出的备份。');}
  },[]);
- const save=useCallback(async(key:string,value:number,expected?:number)=>{
-  if(!readyRef.current||busyRef.current)throw new Error('请等待记录加载或保存完成。');
+
+ const save=useCallback(async(key:string,value:number)=>{
+  if(!readyRef.current)throw new Error('请等待本机记录加载完成。');
   if(!validateChange(key,value))throw new Error('历史日期仅供查看，不能补卡。');
-  busyRef.current=true;setBusy(true);++seq.current;setError('');failedRef.current=null;setFailed(null);
-  const old=recordRef.current[key]||0;const previous=expected??old;
-  recordRef.current={...recordRef.current,[key]:value};setRecords(recordRef.current);
-  try{const r=await fetch('/api/progress',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,value,expected:previous}),signal:AbortSignal.timeout(15000)});const data=await r.json() as {error?:string,lastSavedAt?:string};if(!r.ok){if(r.status===401){setAuth(true);readyRef.current=false;setReady(false);setAccountEmail('');}throw new Error(data.error||'打卡还没有保存，请重试。');}if(data.lastSavedAt)setLastSavedAt(data.lastSavedAt);return {key,value,saved:true};}
-  catch(e){recordRef.current={...recordRef.current,[key]:old};setRecords(recordRef.current);failedRef.current={key,value,expected:previous};setFailed(failedRef.current);setError(e instanceof Error&&e.name!=='TimeoutError'?e.message:'保存超时，请重试确认这次打卡。');throw e;}
-  finally{busyRef.current=false;setBusy(false);}
+  const old=recordRef.current;const next={...old,[key]:value};const savedAt=new Date().toISOString();
+  setBusy(true);setError('');recordRef.current=next;setRecords(next);
+  try{writeStored(next,savedAt);setLastSavedAt(savedAt);return {key,value,saved:true};}
+  catch(e){recordRef.current=old;setRecords(old);setError('本机空间不足，记录尚未保存。请先导出备份。');throw e;}
+  finally{setBusy(false);}
  },[]);
- useEffect(()=>{void refresh();const interval=setInterval(()=>{setToday(todayKey());if(document.visibilityState==='visible')void refresh();},60000);const focus=()=>{setToday(todayKey());void refresh();};const visible=()=>{if(document.visibilityState==='visible')focus();};window.addEventListener('pageshow',focus);document.addEventListener('visibilitychange',visible);window.addEventListener('focus',focus);window.addEventListener('online',focus);return()=>{clearInterval(interval);window.removeEventListener('pageshow',focus);document.removeEventListener('visibilitychange',visible);window.removeEventListener('focus',focus);window.removeEventListener('online',focus);};},[refresh]);
+
+ const exportData=useCallback(()=>{
+  const payload=JSON.stringify({app:'JustinPlan2026',version:1,records:recordRef.current,exportedAt:new Date().toISOString()},null,2);
+  const url=URL.createObjectURL(new Blob([payload],{type:'application/json'}));const link=document.createElement('a');
+  link.href=url;link.download=`JustinPlan2026-${todayKey()}.json`;link.click();URL.revokeObjectURL(url);
+ },[]);
+
+ const importData=useCallback(async(raw:string)=>{
+  const data=JSON.parse(raw) as {records?:unknown};const imported=cleanRecords(data.records);
+  if(!Object.keys(imported).length)throw new Error('备份文件中没有可导入的打卡记录。');
+  const next={...recordRef.current,...imported};const savedAt=new Date().toISOString();writeStored(next,savedAt);
+  recordRef.current=next;setRecords(next);setLastSavedAt(savedAt);setError('');return Object.keys(imported).length;
+ },[]);
+
  useEffect(()=>{
-  const context=(document as Document & {modelContext?:{registerTool:(tool:unknown,options:unknown)=>void}}).modelContext;if(!context?.registerTool)return;
-  const life=new AbortController();
-  try{context.registerTool({name:'read_study_progress',title:'查看学习打卡',description:'读取已加载的每日、每周和学期打卡记录。日期按北京时间。',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:true},execute:()=>{if(!readyRef.current)throw new Error('记录尚未加载');return {today:todayKey(),records:recordRef.current};}},{signal:life.signal});
-  context.registerTool({name:'set_study_checkin',title:'记录学习打卡',description:'记录或撤销今天的每日任务、本周任务次数或学期里程碑。key 使用读取记录的格式；d:日期:listen|word|bath|teeth|read，w:周一日期:math|test|story|robot|review，g:p1|p2|p3|p4|dental|math-all|s-class。',inputSchema:{type:'object',properties:{key:{type:'string'},value:{type:'integer',minimum:0,maximum:7}},required:['key','value'],additionalProperties:false},annotations:{readOnlyHint:false},execute:async(input:unknown)=>{const a=input as {key:string,value:number};if(!a||!validateChange(a.key,a.value))throw new Error('无效的打卡任务、日期或次数');return await save(a.key,a.value);}},{signal:life.signal});}catch(e){console.warn('Study tools unavailable',e);}return()=>life.abort();
- },[save]);
- return {records,ready,busy,error,auth,today,refresh,save,failed,accountEmail,lastSavedAt};
+  void refresh();
+  const restore=()=>{if(document.visibilityState==='visible')void refresh();};
+  const timer=setInterval(()=>setToday(todayKey()),60000);
+  window.addEventListener('pageshow',restore);window.addEventListener('storage',restore);document.addEventListener('visibilitychange',restore);
+  if('serviceWorker'in navigator)void navigator.serviceWorker.register('./sw.js',{scope:'./'}).catch(()=>{});
+  return()=>{clearInterval(timer);window.removeEventListener('pageshow',restore);window.removeEventListener('storage',restore);document.removeEventListener('visibilitychange',restore);};
+ },[refresh]);
+
+ return {records,ready,busy,error,today,refresh,save,lastSavedAt,exportData,importData};
 }
