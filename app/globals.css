@@ -20,3 +20,5 @@ html{scroll-padding-bottom:calc(88px + env(safe-area-inset-bottom, 0px))}
 .phase-heading{display:flex;align-items:center;gap:12px;margin-bottom:14px}.phase-heading .phase-num{flex-shrink:0;margin-bottom:0}.phase-heading h3{margin:0;min-width:0}.phase-time{display:block;margin-bottom:10px}
 
 .phase-heading{gap:8px}.phase-heading h3{flex:1}.phase .phase-heading .goal-check{flex-direction:row-reverse;align-items:center;flex-shrink:0;gap:6px;margin:0 0 0 auto;min-height:38px;font-size:13px;white-space:nowrap}.phase .phase-heading .goal-check [data-slot=checkbox]{margin:0}.phase p{min-height:0}@media(max-width:680px){.phases{grid-template-columns:1fr}.phase{border-right:0}}
+
+.install>p{margin:10px 0}.install a{color:#256854;text-decoration:underline}.cloud-details{display:flex;flex-direction:column;gap:5px;margin-top:14px;padding-top:12px;border-top:1px solid #dce5e9;overflow-wrap:anywhere}.cloud-details .text-button{align-self:flex-start;padding-left:0}
